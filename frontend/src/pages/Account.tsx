@@ -1,0 +1,8 @@
+import {FormEvent,useState} from "react";
+import {api,authStore} from "../services/api";
+
+export function ChangePasswordPage({onComplete}:{onComplete:()=>void}){
+  const [current,setCurrent]=useState(''),[next,setNext]=useState(''),[confirm,setConfirm]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
+  async function submit(event:FormEvent){event.preventDefault();if(next!==confirm){setMessage('The new passwords do not match');return}setBusy(true);try{await api.changePassword(current,next);authStore.clear();setMessage('Password changed. Sign in again with your new password.');onComplete()}catch(error){setMessage((error as Error).message)}finally{setBusy(false)}}
+  return <main className="login"><section className="login-card"><p className="eyebrow">ACCOUNT SECURITY</p><h1>Change your temporary password</h1><p className="muted">Choose at least 12 characters. You will sign in again after the change.</p><form onSubmit={submit}><label>Current password<input required type="password" autoComplete="current-password" value={current} onChange={e=>setCurrent(e.target.value)}/></label><label>New password<input required type="password" minLength={12} autoComplete="new-password" value={next} onChange={e=>setNext(e.target.value)}/></label><label>Confirm new password<input required type="password" minLength={12} autoComplete="new-password" value={confirm} onChange={e=>setConfirm(e.target.value)}/></label>{message&&<div className={message.startsWith('Password changed')?'notice':'alert'}>{message}</div>}<button className="primary" disabled={busy}>{busy?'Changing…':'Change password'}</button></form></section></main>;
+}

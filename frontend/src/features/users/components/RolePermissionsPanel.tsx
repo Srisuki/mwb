@@ -1,0 +1,4 @@
+import {useEffect,useState} from 'react';
+import type {Role} from '../../../types';
+import {usersApi} from '../services/usersApi';
+export function RolePermissionsPanel(){const [roles,setRoles]=useState<Role[]>([]),[error,setError]=useState('');useEffect(()=>{usersApi.roles().then(setRoles).catch(reason=>setError(reason.message))},[]);return <section className="panel role-panel"><div className="panel-head"><div><p className="eyebrow">ADMINISTRATION</p><h2>Roles & permissions</h2></div><span>{roles.length} system roles</span></div>{error&&<div className="alert">{error}</div>}<div className="role-grid">{roles.map(role=><article key={role.id}><div><strong>{role.name}</strong><span className="badge">{role.is_system_role?'System role':'Custom role'}</span></div><p>{role.description}</p><div className="chip-list">{role.permissions.map(permission=><span className="chip" key={permission}>{permission.replaceAll('_',' ')}</span>)}</div></article>)}</div></section>}

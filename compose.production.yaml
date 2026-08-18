@@ -1,0 +1,82 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-mwb_audit}
+      POSTGRES_USER: ${POSTGRES_USER:-mwb_audit}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      ENVIRONMENT: production
+    volumes:
+      - ${DOCUMENT_STORAGE_PATH:?set DOCUMENT_STORAGE_PATH}:/data/uploads
+      - ./MWB_Internal_Audit_Manager.html:/data/legacy/MWB_Internal_Audit_Manager.html:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: /api
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN to the public DNS name}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      frontend:
+        condition: service_started
+    restart: unless-stopped
+
+  backup:
+    image: postgres:16-alpine
+    environment:
+      PGHOST: postgres
+      PGDATABASE: ${POSTGRES_DB:-mwb_audit}
+      PGUSER: ${POSTGRES_USER:-mwb_audit}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+    volumes:
+      - ${BACKUP_STORAGE_PATH:?set BACKUP_STORAGE_PATH}:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["sh", "-c", "while true; do stamp=$$(date -u +%Y%m%dT%H%M%SZ); pg_dump --format=custom --file=/backups/mwb_audit_$${stamp}.dump; find /backups -type f -name 'mwb_audit_*.dump' -mtime +$${BACKUP_RETENTION_DAYS} -delete; sleep $${BACKUP_INTERVAL_SECONDS}; done"]
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,12 @@
+export type User={id:string;email:string;full_name:string;mobile:string|null;role:string;permissions:string[];is_active:boolean;is_verified:boolean;must_change_password:boolean;entity_ids:string[];last_login_at:string|null;created_at:string;updated_at:string};
+export type Role={id:string;code:string;name:string;description:string;is_system_role:boolean;is_active:boolean;permissions:string[]};
+export type AuditActivity={id:string;action:string;old_value:Record<string,unknown>|null;new_value:Record<string,unknown>|null;created_at:string};
+export type UserDetail=User&{effective_permissions:string[];clients:Entity[];recent_activity:AuditActivity[]};
+export type Summary={total_observations:number;pending_repeated:number;high_critical:number;locked_reports:number;overdue_observations:number;due_plans:number};
+export type Entity={id:string;name:string;code:string|null;is_active:boolean};
+export type Area={id:string;name:string;description:string;sort_order:number};
+export type Checklist={id:string;audit_area_id:string;question:string;description:string;is_mandatory:boolean;sort_order:number};
+export type Plan={id:string;entity_id:string;audit_area_id:string;period:string;due_date:string;status:string;version:number};
+export type Observation={id:string;entity_id:string;audit_area_id:string;checklist_item_id:string;period:string;risk:string;status:string;observation:string;remark:string;responsible_person:string;due_date:string|null;locked_at:string|null;created_at:string;updated_at:string;version:number};
+export type Report={id:string;entity_id:string;period:string;report_type:string;report_number:string|null;status:string;created_at:string};
+export type DocumentRecord={id:string;entity_id:string;audit_area_id:string|null;observation_id:string|null;checklist_item_id:string|null;period:string;document_type:string;file_name:string;mime_type:string;file_size:number;checksum:string;remarks:string;created_at:string};
