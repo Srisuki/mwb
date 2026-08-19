@@ -7,4 +7,5 @@ node_modules/
 dist/
 uploads/*
 !uploads/.gitkeep
-
+backups/*
+!backups/.gitkeep

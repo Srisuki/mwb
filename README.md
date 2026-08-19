@@ -30,6 +30,43 @@ No business data is stored in browser `localStorage`. Browser session storage co
 
 The initialization operation is idempotent. `--baseline` loads the preserved legacy entities, audit areas and checklist; `--sample-data` is optional.
 
+## Cloudflare Tunnel deployment from a local Mac
+
+`compose.cloudflare.yaml` adds an outbound-only Cloudflared connector while retaining
+local access at <http://localhost:8080>. It does not publish PostgreSQL or FastAPI ports.
+
+1. Record the existing GoDaddy `@` and `www` DNS records and add `hombal.co.in` to a
+   free Cloudflare account. Verify Cloudflare imported both website records.
+2. Replace the GoDaddy nameservers with the two assigned by Cloudflare, wait until the
+   zone is Active, and confirm <https://www.hombal.co.in> still works.
+3. In Cloudflare Zero Trust, create a remotely managed Cloudflared tunnel. Add public
+   hostname `audit.hombal.co.in` and point it to `http://frontend:80`.
+4. Copy only the generated tunnel token into `CLOUDFLARE_TUNNEL_TOKEN` in `.env`.
+5. Change the disclosed temporary administrator password through the local application.
+6. Start or update the stack:
+
+   ```sh
+   docker compose -f compose.yaml -f compose.cloudflare.yaml up -d --build
+   ```
+
+Inspect the connector without exposing its token:
+
+```sh
+docker compose -f compose.yaml -f compose.cloudflare.yaml ps
+docker compose -f compose.yaml -f compose.cloudflare.yaml logs --tail=100 cloudflared
+```
+
+Stop only public access while keeping localhost available:
+
+```sh
+docker compose -f compose.yaml -f compose.cloudflare.yaml stop cloudflared
+```
+
+No router port forwarding is required. Keep the Mac powered on, awake, connected to
+the internet, and running Docker. If the existing website fails after the nameserver
+change, restore any missing `@` or `www` record in Cloudflare; the final rollback is to
+restore the previous GoDaddy nameservers.
+
 ## User and role management
 
 Admin / Partner users can open **Users** from the application navigation. User administration provides:

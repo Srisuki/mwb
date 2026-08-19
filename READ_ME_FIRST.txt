@@ -51,3 +51,35 @@ START AGAIN
 docker compose start
 
 Do not use docker compose down -v because -v removes the PostgreSQL volume.
+
+CLOUDFLARE TUNNEL (audit.hombal.co.in)
+
+The tunnel is outbound-only. Do not open router ports 80, 443, 5432 or 8000.
+Local access remains available at http://localhost:8080.
+
+Before enabling public access:
+1. Sign in locally and change the temporary administrator password.
+2. Add hombal.co.in to Cloudflare and confirm its imported @ and www DNS records.
+3. Change only the domain nameservers in GoDaddy to those assigned by Cloudflare.
+4. Confirm https://www.hombal.co.in still works.
+5. In Cloudflare Zero Trust, create a remotely managed Cloudflared tunnel.
+6. Add public hostname audit.hombal.co.in with service URL http://frontend:80.
+7. Copy the tunnel token into CLOUDFLARE_TUNNEL_TOKEN in .env. Never share it.
+
+Start the app and tunnel:
+  docker compose -f compose.yaml -f compose.cloudflare.yaml up -d --build
+
+Check status:
+  docker compose -f compose.yaml -f compose.cloudflare.yaml ps
+  docker compose -f compose.yaml -f compose.cloudflare.yaml logs --tail=100 cloudflared
+
+Stop the tunnel but keep the local app running:
+  docker compose -f compose.yaml -f compose.cloudflare.yaml stop cloudflared
+
+Start the tunnel again:
+  docker compose -f compose.yaml -f compose.cloudflare.yaml start cloudflared
+
+Emergency DNS recovery:
+If the existing website stops after changing nameservers, compare Cloudflare DNS with
+the GoDaddy records recorded before the change. Restore the missing @ or www record.
+Changing nameservers back to the original GoDaddy values is the final rollback.

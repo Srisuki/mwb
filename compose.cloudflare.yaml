@@ -1,0 +1,13 @@
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    #command: tunnel --no-autoupdate run
+    #command: tunnel --no-autoupdate --loglevel debug run
+    command: tunnel --no-autoupdate --protocol http2 run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?Create a Cloudflare Tunnel and set CLOUDFLARE_TUNNEL_TOKEN in .env}
+    depends_on:
+      frontend:
+        condition: service_started
+    restart: unless-stopped
+
